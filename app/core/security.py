@@ -113,10 +113,13 @@ async def get_current_user_id(
         jwks = await _fetch_jwks()
         signing_key = _find_signing_key(jwks, token)
 
+        # Supabase JWT signing keys may be RSA (RS256) or ECC (ES256). The kid
+        # match + JWKS signature verification already pin the exact key; accept
+        # both algorithms so ES256-signed tokens are not rejected.
         payload = jwt.decode(
             token,
             key=signing_key,
-            algorithms=["RS256"],
+            algorithms=["RS256", "ES256"],
             audience=settings.supabase_jwt_audience,
             issuer=settings.supabase_jwt_issuer or None,
         )
