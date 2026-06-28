@@ -2,7 +2,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.errors import AppError, NotFoundError
-from app.schemas.place import PlaceSearchResult
+from app.schemas.place import PlaceDetail, PlaceSearchResult
 
 GOOGLE_PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 GOOGLE_PLACES_DETAIL_URL = "https://places.googleapis.com/v1/places"
@@ -11,8 +11,12 @@ FIELD_MASK = (
     "places.id,places.displayName,places.formattedAddress,"
     "places.location,places.primaryType,places.rating,places.googleMapsUri"
 )
+# Richer mask for Place Details → Map Card Reel. rating/userRatingCount/priceLevel/
+# priceRange/regularOpeningHours are higher-cost (Enterprise SKU) — fetched once per
+# captured video and frozen into the snapshot, never per render.
 DETAIL_FIELD_MASK = (
-    "id,displayName,formattedAddress,location,primaryType,rating,googleMapsUri"
+    "id,displayName,formattedAddress,location,primaryType,primaryTypeDisplayName,"
+    "rating,userRatingCount,priceLevel,priceRange,regularOpeningHours,googleMapsUri"
 )
 
 
@@ -58,7 +62,7 @@ class PlacesService:
             )
         return results
 
-    async def get_detail(self, place_id: str) -> PlaceSearchResult:
+    async def get_detail(self, place_id: str) -> PlaceDetail:
         headers = {
             "X-Goog-Api-Key": settings.google_maps_api_key,
             "X-Goog-FieldMask": DETAIL_FIELD_MASK,
@@ -78,13 +82,21 @@ class PlacesService:
             )
 
         p = resp.json()
-        return PlaceSearchResult(
+        primary_type_display = p.get("primaryTypeDisplayName")
+        return PlaceDetail(
             placeId=p.get("id", place_id),
             displayName=p.get("displayName", {}).get("text", ""),
             formattedAddress=p.get("formattedAddress", ""),
             latitude=p.get("location", {}).get("latitude", 0),
             longitude=p.get("location", {}).get("longitude", 0),
             primaryType=p.get("primaryType"),
+            primaryTypeDisplayName=(
+                primary_type_display.get("text") if primary_type_display else None
+            ),
             rating=p.get("rating"),
+            userRatingCount=p.get("userRatingCount"),
+            priceLevel=p.get("priceLevel"),
+            priceRange=p.get("priceRange"),
+            regularOpeningHours=p.get("regularOpeningHours"),
             googleMapsUri=p.get("googleMapsUri"),
         )

@@ -16,3 +16,23 @@ class PlaceSearchResult(BaseModel):
 
 class PlaceSearchResponse(BaseModel):
     results: list[PlaceSearchResult]
+
+
+class PlaceDetail(PlaceSearchResult):
+    """Richer place fields for the Map Card Reel. Superset of PlaceSearchResult.
+
+    `price_range` and `regular_opening_hours` are passed through as raw Google
+    Places (New) objects so the client can format them for its own card design.
+    """
+
+    user_rating_count: int | None = Field(default=None, alias="userRatingCount")
+    primary_type_display_name: str | None = Field(
+        default=None, alias="primaryTypeDisplayName"
+    )
+    price_level: str | None = Field(default=None, alias="priceLevel")
+    price_range: dict | None = Field(default=None, alias="priceRange")
+    regular_opening_hours: dict | None = Field(
+        default=None, alias="regularOpeningHours"
+    )
+
+    model_config = ConfigDict(populate_by_name=True, by_alias=True)

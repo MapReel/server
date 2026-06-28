@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 
-from app.schemas.place import PlaceSearchResponse, PlaceSearchResult
+from app.schemas.place import PlaceDetail, PlaceSearchResponse
 from app.services.places_service import PlacesService
 
 router = APIRouter()
@@ -17,9 +17,9 @@ async def search_places(
     return PlaceSearchResponse(results=results)
 
 
-@router.get("/{place_id}", response_model=PlaceSearchResult)
+@router.get("/{place_id}", response_model=PlaceDetail)
 async def get_place_detail(
     place_id: str,
-) -> PlaceSearchResult:
+) -> PlaceDetail:
     service = PlacesService()
     return await service.get_detail(place_id=place_id)
